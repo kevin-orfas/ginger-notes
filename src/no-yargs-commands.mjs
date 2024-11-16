@@ -1,6 +1,14 @@
-import {findNotes, getAllNotes, newNote, removeAllNotes, removeNote} from './notes.mjs';
-import {listNotes} from './utils.mjs';
-import {start} from './server.mjs';
+import { newNote, getAllNotes, findNotes, removeNote, removeAllNotes } from './notes.mjs'
+import { listNotes } from './utils.mjs'
+import { start } from './server.mjs'
+
+class CommandError extends Error {
+    constructor(message, showUsage = false) {
+        super(message);
+        this.name = 'CommandError';
+        this.showUsage = showUsage;
+    }
+}
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -18,99 +26,179 @@ Usage:
     `);
 }
 
+async function validatePort(port) {
+    const parsedPort = parseInt(port);
+    if (isNaN(parsedPort)) {
+        throw new CommandError('Port must be a number');
+    }
+    if (parsedPort < 0 || parsedPort > 65535) {
+        throw new CommandError('Port must be between 0 and 65535');
+    }
+    return parsedPort;
+}
+
+async function validateId(id) {
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+        throw new CommandError('ID must be a number');
+    }
+    if (parsedId < 0) {
+        throw new CommandError('ID must be a positive number');
+    }
+    return parsedId;
+}
+
 async function parseTagsOption(args) {
     const tagIndex = args.indexOf('--tags');
     if (tagIndex === -1) return [];
 
     if (tagIndex + 1 >= args.length) {
-        console.error('Error: --tags requires a value');
-        process.exit(1);
+        throw new CommandError('--tags requires a value');
     }
 
-    return args[tagIndex + 1].split(',');
+    const tags = args[tagIndex + 1].split(',');
+    if (tags.some(tag => !tag.trim())) {
+        throw new CommandError('Tags cannot be empty');
+    }
+
+    return tags;
+}
+
+async function validateNoteContent(content) {
+    if (!content || typeof content !== 'string') {
+        throw new CommandError('Note content is required and must be a string', true);
+    }
+    if (content.trim().length === 0) {
+        throw new CommandError('Note content cannot be empty');
+    }
+    return content.trim();
+}
+
+async function executeCommand(command, args) {
+    switch (command) {
+        case 'new': {
+            const noteContent = await validateNoteContent(args[1]);
+            const tags = await parseTagsOption(args);
+            const note = await newNote(noteContent, tags);
+            console.log('Note added!', note.id);
+            break;
+        }
+
+        case 'all': {
+            const notes = await getAllNotes();
+            if (notes.length === 0) {
+                console.log('No notes found');
+                return;
+            }
+            listNotes(notes);
+            break;
+        }
+
+        case 'find': {
+            const filter = args[1];
+            if (!filter) {
+                throw new CommandError('Search filter is required', true);
+            }
+            const notes = await findNotes(filter);
+            if (notes.length === 0) {
+                console.log('No notes found matching filter');
+                return;
+            }
+            listNotes(notes);
+            break;
+        }
+
+        case 'remove': {
+            if (!args[1]) {
+                throw new CommandError('Note ID is required', true);
+            }
+            const id = await validateId(args[1]);
+            const removedId = await removeNote(id);
+            if (removedId) {
+                console.log('Note removed: ', removedId);
+            } else {
+                throw new CommandError(`Note with ID ${id} not found`);
+            }
+            break;
+        }
+
+        case 'web': {
+            const port = args[1] ? await validatePort(args[1]) : 5000;
+            const notes = await getAllNotes();
+            try {
+                await start(notes, port);
+                console.log(`Server started on port ${port}`);
+            } catch (error) {
+                throw new CommandError(`Failed to start server: ${error.message}`);
+            }
+            break;
+        }
+
+        case 'clean': {
+            const notes = await getAllNotes();
+            if (notes.length === 0) {
+                console.log('No notes to remove');
+                return;
+            }
+            await removeAllNotes();
+            console.log('All notes removed');
+            break;
+        }
+
+        case 'help': {
+            await printUsage();
+            break;
+        }
+
+        default: {
+            throw new CommandError(`Unknown command: ${command}`, true);
+        }
+    }
 }
 
 async function main() {
-    if (!command || command === 'help') {
-        await printUsage();
-        process.exit(0);
+    if (!command) {
+        throw new CommandError('No command provided', true);
     }
 
     try {
-        switch (command) {
-            case 'new': {
-                const noteContent = args[1];
-                if (!noteContent) {
-                    console.error('Error: Note content is required');
-                    process.exit(1);
-                }
-                const tags = await parseTagsOption(args);
-                const note = await newNote(noteContent, tags);
-                console.log('Note added!', note.id);
-                break;
-            }
-
-            case 'all': {
-                const notes = await getAllNotes();
-                listNotes(notes);
-                break;
-            }
-
-            case 'find': {
-                const filter = args[1];
-                if (!filter) {
-                    console.error('Error: Search filter is required');
-                    process.exit(1);
-                }
-                const notes = await findNotes(filter);
-                listNotes(notes);
-                break;
-            }
-
-            case 'remove': {
-                const id = parseInt(args[1]);
-                if (isNaN(id)) {
-                    console.error('Error: Valid note ID is required');
-                    process.exit(1);
-                }
-                const removedId = await removeNote(id);
-                if (removedId) {
-                    console.log('Note removed: ', removedId);
-                } else {
-                    console.log('Note not found');
-                }
-                break;
-            }
-
-            case 'web': {
-                const port = parseInt(args[1]) || 5000;
-                const notes = await getAllNotes();
-                start(notes, port);
-                break;
-            }
-
-            case 'clean': {
-                await removeAllNotes();
-                console.log('All notes removed');
-                break;
-            }
-
-            default: {
-                console.error(`Unknown command: ${command}`);
-                await printUsage();
-                process.exit(1);
-            }
-        }
+        await executeCommand(command, args);
     } catch (error) {
-        console.error('Error:', error.message);
-        process.exit(1);
+        if (error instanceof CommandError) {
+            console.error('Error:', error.message);
+            if (error.showUsage) {
+                await printUsage();
+            }
+            process.exit(1);
+        }
+        throw error; // Re-throw unexpected errors
     }
 }
 
+// Option 1: Using top-level await (if supported)
 try {
-    main();
+    await main();
 } catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);
 }
 
+// Option 2: Using IIFE (if top-level await is not supported)
+/*
+(async () => {
+    try {
+        await main();
+    } catch (error) {
+        console.error('Fatal error:', error);
+        process.exit(1);
+    }
+})();
+*/
+
+// Option 3: Using promise catch (alternative approach)
+/*
+main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+});
+*/

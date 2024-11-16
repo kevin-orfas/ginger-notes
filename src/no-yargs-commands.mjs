@@ -1,68 +1,12 @@
 import { newNote, getAllNotes, findNotes, removeNote, removeAllNotes } from './notes.mjs'
 import { listNotes } from './utils.mjs'
 import { start } from './server.mjs'
+import {CommandError} from './commands/CommandError.mjs';
+import {parseTagsOption, printUsage, validateId, validateNoteContent, validatePort} from './commands/utils.mjs';
 
-class CommandError extends Error {
-    constructor(message, showUsage = false) {
-        super(message);
-        this.name = 'CommandError';
-        this.showUsage = showUsage;
-    }
-}
 
 const args = process.argv.slice(2);
 const command = args[0];
-
-async function printUsage() {
-    console.log(`
-Usage:
-    new <note> [--tags tag1,tag2]  Create a new note
-    all                            Get all notes
-    find <filter>                  Find notes matching filter
-    remove <id>                    Remove a note by id
-    web [port]                     Launch website (default port: 5000)
-    clean                          Remove all notes
-    help                           Show this help message
-    `);
-}
-
-
-async function validateId(id) {
-    const parsedId = parseInt(id);
-    if (isNaN(parsedId)) {
-        throw new CommandError('ID must be a number');
-    }
-    if (parsedId < 0) {
-        throw new CommandError('ID must be a positive number');
-    }
-    return parsedId;
-}
-
-async function parseTagsOption(args) {
-    const tagIndex = args.indexOf('--tags');
-    if (tagIndex === -1) return [];
-
-    if (tagIndex + 1 >= args.length) {
-        throw new CommandError('--tags requires a value');
-    }
-
-    const tags = args[tagIndex + 1].split(',');
-    if (tags.some(tag => !tag.trim())) {
-        throw new CommandError('Tags cannot be empty');
-    }
-
-    return tags;
-}
-
-async function validateNoteContent(content) {
-    if (!content || typeof content !== 'string') {
-        throw new CommandError('Note content is required and must be a string', true);
-    }
-    if (content.trim().length === 0) {
-        throw new CommandError('Note content cannot be empty');
-    }
-    return content.trim();
-}
 
 async function executeCommand(command, args) {
     switch (command) {

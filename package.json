@@ -1,5 +1,5 @@
 {
-  "name": "on-a-post-it",
+  "name": "ginger-notes",
   "version": "0.1.0",
   "description": "Note taking app with NodeJS",
   "main": "index.js",
@@ -11,13 +11,12 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "open": "^10.1.0",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.7"
+    "jest": "^29.7.0"
   }
 }

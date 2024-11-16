@@ -1,6 +1,6 @@
-import { newNote, getAllNotes, findNotes, removeNote, removeAllNotes } from './notes.mjs'
-import { listNotes } from './utils.mjs'
-import { start } from './server.mjs'
+import {findNotes, getAllNotes, newNote, removeAllNotes, removeNote} from './notes.mjs';
+import {listNotes} from './utils.mjs';
+import {start} from './server.mjs';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -107,7 +107,10 @@ async function main() {
     }
 }
 
-main().catch(error => {
+try {
+    main();
+} catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);
-});
+}
+

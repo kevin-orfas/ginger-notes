@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-import "./src/commands.mjs"
+import "./src/no-yargs-commands.mjs"

@@ -26,7 +26,7 @@ Usage:
     `);
 }
 
-async function validatePort(port) {
+export async function validatePort(port) {
     const parsedPort = parseInt(port);
     if (isNaN(parsedPort)) {
         throw new CommandError('Port must be a number');
@@ -176,12 +176,12 @@ async function main() {
 }
 
 // Option 1: Using top-level await (if supported)
-try {
-    await main();
-} catch (error) {
-    console.error('Fatal error:', error);
-    process.exit(1);
-}
+// try {
+//     await main();
+// } catch (error) {
+//     console.error('Fatal error:', error);
+//     process.exit(1);
+// }
 
 // Option 2: Using IIFE (if top-level await is not supported)
 /*
@@ -196,9 +196,8 @@ try {
 */
 
 // Option 3: Using promise catch (alternative approach)
-/*
 main().catch(error => {
     console.error('Fatal error:', error);
     process.exit(1);
 });
-*/
+

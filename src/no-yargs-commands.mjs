@@ -26,16 +26,6 @@ Usage:
     `);
 }
 
-export async function validatePort(port) {
-    const parsedPort = parseInt(port);
-    if (isNaN(parsedPort)) {
-        throw new CommandError('Port must be a number');
-    }
-    if (parsedPort < 0 || parsedPort > 65535) {
-        throw new CommandError('Port must be between 0 and 65535');
-    }
-    return parsedPort;
-}
 
 async function validateId(id) {
     const parsedId = parseInt(id);

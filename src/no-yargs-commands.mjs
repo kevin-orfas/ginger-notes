@@ -107,10 +107,32 @@ async function main() {
     }
 }
 
+// Option 1: Using top-level await (if supported)
 try {
-    main();
+    await main();
 } catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);
 }
+
+// Option 2: Using IIFE (if top-level await is not supported)
+/*
+(async () => {
+    try {
+        await main();
+    } catch (error) {
+        console.error('Fatal error:', error);
+        process.exit(1);
+    }
+})();
+*/
+
+// Option 3: Using promise catch (alternative approach)
+/*
+main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+});
+*/
+
 

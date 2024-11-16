@@ -1,10 +1,4 @@
-class CommandError extends Error {
-    constructor(message, showUsage = false) {
-        super(message);
-        this.name = 'CommandError';
-        this.showUsage = showUsage;
-    }
-}
+import {CommandError} from './CommandError.mjs';
 
 async function validatePort(port) {
     // Check for empty input first
